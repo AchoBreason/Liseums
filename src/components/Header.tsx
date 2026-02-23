@@ -13,17 +13,17 @@ export default function Header() {
                     <div className="absolute top-0 right-0 w-[1.5px] h-4 bg-foreground/80"></div>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-sm font-medium tracking-widest text-foreground">谱相留白</span>
-                    <span className="text-xs tracking-[0.2em] text-foreground/60">LISEUMS</span>
+                    <span className="text-sm font-medium tracking-widest text-foreground uppercase">Liseums</span>
+                    <span className="text-xs tracking-[0.2em] text-foreground/60 uppercase">Protocol</span>
                 </div>
             </div>
 
             {/* Ghost Button */}
             <motion.button
                 whileHover={{ backgroundColor: "rgba(51, 51, 51, 0.05)" }}
-                className="px-6 py-2 border-[1px] border-foreground/20 text-sm tracking-widest text-foreground transition-colors"
+                className="px-6 py-2 border-[1px] border-foreground/20 text-sm tracking-widest text-foreground transition-colors uppercase"
             >
-                参与协议
+                Join Protocol
             </motion.button>
         </header>
     );

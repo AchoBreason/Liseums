@@ -15,10 +15,10 @@ export default function Exhibit() {
             >
                 <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-16">
                     <div>
-                        <h2 className="text-2xl md:text-3xl font-light tracking-wide mb-6">样本 001 - 不用上班指南</h2>
+                        <h2 className="text-2xl md:text-3xl font-light tracking-wide mb-6">Sample 001 - The Anti-Work Guide</h2>
                         <div className="flex flex-wrap gap-4">
-                            {['数字游牧', '独立开发', '南半球生活'].map((tag) => (
-                                <span key={tag} className="text-xs tracking-[0.15em] text-foreground/60 border-[0.5px] border-foreground/20 px-4 py-1.5">
+                            {['Digital Nomad', 'Indie Hacker', 'Southern Hemisphere'].map((tag) => (
+                                <span key={tag} className="text-xs tracking-[0.15em] text-foreground/60 border-[0.5px] border-foreground/20 px-4 py-1.5 uppercase">
                                     [{tag}]
                                 </span>
                             ))}
@@ -34,13 +34,13 @@ export default function Exhibit() {
 
                 <div className="pl-6 border-l-[1px] border-foreground/20 mb-12 py-2">
                     <p className="text-base md:text-lg text-foreground/70 font-light leading-loose">
-                        “从布里斯班的阳光到终端里的代码，不用上班不是一种对劳动的拒绝，而是夺回时间主权的尝试。这是关于一套键盘、一台服务器和一种全新生活协议的记录。”
+                        "From the sunshine of Brisbane to the code in the terminal, not going to work is not a rejection of labor, but an attempt to reclaim time sovereignty. This is a record of a keyboard, a server, and a completely new protocol for living."
                     </p>
                 </div>
 
                 <div className="flex items-center">
                     <div className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-pulse mr-4"></div>
-                    <p className="text-xs text-foreground/50 tracking-[0.15em]">完整影像/文稿即将解密...</p>
+                    <p className="text-xs text-foreground/50 tracking-[0.15em]">Full video / transcript to be decrypted...</p>
                 </div>
             </motion.div>
         </section>

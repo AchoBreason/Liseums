@@ -26,7 +26,7 @@ export default function About() {
                     className="md:w-2/3 pt-4 md:pt-16"
                 >
                     <p className="text-lg md:text-xl text-foreground/80 leading-loose font-light">
-                        人是由无数个瞬间组成的容器。当系统要求我们整齐划一，我们选择用「切片」的方式，将那些微小的、私密的、打破常规的个体经验永久归档。
+                        Humans are vessels composed of countless moments. When the system demands uniformity, we choose to use "slices" to permanently archive those microscopic, intimate, and unconventional individual experiences.
                     </p>
                 </motion.div>
             </div>
