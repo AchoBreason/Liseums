@@ -20,10 +20,10 @@ export default function Header() {
 
             {/* Ghost Button */}
             <motion.button
-                whileHover={{ backgroundColor: "rgba(51, 51, 51, 0.05)" }}
-                className="px-6 py-2 border-[1px] border-foreground/20 text-sm tracking-widest text-foreground transition-colors uppercase"
+                whileHover={{ backgroundColor: "var(--color-gold)", borderColor: "transparent", color: "#ffffff", boxShadow: "0 4px 14px 0 rgba(212, 175, 55, 0.39)" }}
+                className="px-6 py-2 border-[1px] border-foreground/20 text-sm tracking-widest text-foreground transition-all duration-300 uppercase relative overflow-hidden group"
             >
-                Join Protocol
+                <span className="relative z-10">Join Protocol</span>
             </motion.button>
         </header>
     );

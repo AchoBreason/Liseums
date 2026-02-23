@@ -11,7 +11,7 @@ export default function Exhibit() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.8 }}
-                className="group relative border-[0.5px] border-foreground/10 p-8 md:p-14 bg-background hover:shadow-[0_15px_50px_-15px_rgba(0,0,0,0.06)] transition-all duration-700"
+                className="group relative border-[0.5px] border-foreground/10 p-8 md:p-14 bg-background/40 backdrop-blur-md hover:shadow-[0_20px_60px_-15px_rgba(212,175,55,0.1)] transition-all duration-700 hover:border-gold/30 hover:bg-background/60 rounded-3xl"
             >
                 <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-16">
                     <div>
