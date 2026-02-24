@@ -1,0 +1,13 @@
+<view class="container">
+  <view class="result-card" wx:if="{{report}}">
+    <view class="result-title">{{language === 'zh' ? '人生亮点报告' : 'Life Highlights Report'}}</view>
+    <view class="result-content">{{report.summary || report.content || (language === 'zh' ? '报告生成中...' : 'Report generating...')}}</view>
+  </view>
+  <view class="empty-state" wx:else>
+    <view class="empty-text">{{language === 'zh' ? '暂无报告，请先完成AI筛选' : 'No report yet. Complete AI screening first.'}}</view>
+  </view>
+  <view class="actions">
+    <button class="btn-primary" bindtap="goToAppointment">{{language === 'zh' ? '预约采访' : 'Book Interview'}}</button>
+    <button class="btn-secondary" bindtap="goHome">{{language === 'zh' ? '返回首页' : 'Back to Home'}}</button>
+  </view>
+</view>

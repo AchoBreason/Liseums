@@ -1,0 +1,302 @@
+{
+  "name": "Life Slices - AI筛选流程",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "screening-start",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "用户入口 Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "life-slices-screening"
+    },
+    {
+      "parameters": {
+        "operation": "execute",
+        "language": "json",
+        "code": "// 验证支付\nconst webhookData = $input.first().body;\n\n// 检查必要字段\nif (!webhookData.userId) {\n  return {\n    json: {\n      success: false,\n      error: 'Missing userId'\n    }\n  };\n}\n\nreturn {\n  json: {\n    success: true,\n    userId: webhookData.userId,\n    orderId: webhookData.orderId || 'order_' + Date.now(),\n    paymentStatus: webhookData.paymentStatus || 'paid',\n    language: webhookData.language || 'zh'\n  }\n};"
+      },
+      "id": "verify-payment",
+      "name": "验证支付",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "screening_sessions",
+        "columns": "user_id, status, language, current_question, answers, created_at",
+        "values": "={{ $json.userId }}, 'started', '{{ $json.language }}', 0, '[]', NOW()",
+        "options": {}
+      },
+      "id": "create-session",
+      "name": "创建筛选会话",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "supabase": "supabase-auth"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "execute",
+        "language": "json",
+        "code": "// 生成开场白和问题\nconst language = $input.first().json.language || 'zh';\nconst sessionId = $input.first().json.id;\n\nconst greetings = {\n  zh: {\n    greeting: `你好！欢迎来到\"人生切片\"～ 🌟\\n\\n我是你的AI筛选助手，很高兴能和你聊聊你的故事。\\n\\n在正式开始之前，让我简单介绍一下：\\n\"人生切片\"是一个记录人生高光时刻的项目。我们会通过一次深入的对话，帮你发现并记录生命中那些闪光的瞬间，最终形成一本属于你的人生传记。\\n\\n整个对话大约15分钟，你会需要回答约15个问题。准备好了吗？`,\n    firstQuestion: \"最近让你最有成就感的一件事情是什么？\"\n  },\n  en: {\n    greeting: `Hello! Welcome to \"Life Slices\" 🌟\\n\\nI'm your AI screening assistant, excited to chat with you about your story.\\n\\nBefore we begin, let me tell you a bit about us:\\n\"Life Slices\" is a project dedicated to capturing the highlights of your life. Through an in-depth conversation, we'll help you discover and record those brilliant moments in your life, creating a unique biography just for you.\\n\\nThe conversation takes about 15 minutes with around 15 questions. Ready to start?`,\n    firstQuestion: \"What recent accomplishment makes you feel most proud?\"\n  }\n};\n\nconst content = greetings[language] || greetings.zh;\n\nreturn {\n  json: {\n    message: content.greeting,\n    question: content.firstQuestion,\n    questionIndex: 0,\n    totalQuestions: 15,\n    sessionId: sessionId\n  }\n};"
+      },
+      "id": "generate-greeting",
+      "name": "生成开场白",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.minimax.chat/v1/text/chatcompletion_pro",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_MINIMAX_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "MiniMax-M2.5"
+            },
+            {
+              "name": "messages",
+              "value": "[{\"role\": \"system\", \"content\": \"你是一位专业的人生故事倾听者和亮点挖掘师。你的任务是：1. 通过轻松愉快的对话，了解用户的人生高光时刻 2. 挖掘用户不为人知的闪光点 3. 评估用户是否适合做'人生切片'项目 4. 生成一份详细的人生亮点报告\\n\\n对话风格：\\n- 亲切友善，像朋友聊天\\n- 循循善诱，引导用户回忆\\n- 适时共情，给予正向反馈\\n- 控制节奏，每次只问1-2个问题\\n\\n重要原则：\\n- 不评判用户的任何经历\\n- 尊重用户隐私，不强制回答\\n- 发现用户不愿继续时，礼貌结束\\n- 每次回答后，给出积极正向的反馈\"}, {\"role\": \"user\", \"content\": \"用户说：'准备好了'。请给出欢迎语和第一个问题。\"}]"
+            },
+            {
+              "name": "temperature",
+              "value": 0.7
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "minimax-first",
+      "name": "MiniMax 首次对话",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "operation": "execute",
+        "language": "json",
+        "code": "// 提取MiniMax回复\nconst mmResponse = $input.first().json.choices?.[0]?.message?.content || '';\n\n// 从N8N工作流上下文获取sessionId\nconst sessionId = $('$').find('sessionId').first().json || 'session_' + Date.now();\n\nreturn {\n  json: {\n    reply: mmResponse,\n    sessionId: sessionId,\n    questionIndex: 0\n  }\n};"
+      },
+      "id": "parse-first-reply",
+      "name": "解析首次回复",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "screening-response",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "用户回复 Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 600],
+      "webhookId": "life-slices-response"
+    },
+    {
+      "parameters": {
+        "operation": "execute",
+        "language": "json",
+        "code": "// 获取用户回复\nconst body = $input.first().body;\nconst sessionId = body.sessionId;\nconst userAnswer = body.answer;\nconst questionIndex = body.questionIndex || 0;\n\nif (!sessionId || !userAnswer) {\n  return {\n    json: {\n      success: false,\n      error: 'Missing required fields'\n    }\n  };\n}\n\nreturn {\n  json: {\n    success: true,\n    sessionId: sessionId,\n    userAnswer: userAnswer,\n    questionIndex: questionIndex\n  }\n};"
+      },
+      "id": "parse-response",
+      "name": "解析用户回复",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 600]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "table": "screening_sessions",
+        "id": "={{ $json.sessionId }}",
+        "options": {}
+      },
+      "id": "get-session",
+      "name": "获取会话",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [650, 600],
+      "credentials": {
+        "supabase": "supabase-auth"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "execute",
+        "language": "json",
+        "code": "// 构建对话上下文\nconst session = $input.first().json;\nconst userAnswer = $input.items[0].json.userAnswer;\nconst questionIndex = parseInt($input.items[0].json.questionIndex);\n\n// 问题列表\nconst questions = {\n  zh: [\n    \"最近让你最有成就感的一件事情是什么？\",\n    \"如果让你选一个人生中最骄傲的时刻，会是什么？\",\n    \"有没有一段时间，你觉得自己的生活特别精彩？\",\n    \"你经历过最大的挑战是什么？你是怎么度过的？\",\n    \"有没有一个人对你的影响特别大？\",\n    \"你做过最疯狂/最大胆的事情是什么？\",\n    \"如果让你重新选择，你会做什么不同的决定？\",\n    \"什么事情让你做起来会忘记时间？\",\n    \"你有什么特长或技能是别人不知道的？\",\n    \"如果不用考虑钱，你会做什么？\",\n    \"你最想感谢的人是谁？为什么？\",\n    \"你觉得自己给身边的人带来了什么？\",\n    \"如果让你对10年前的自己说一句话，你会说什么？\",\n    \"用三个词形容你目前的人生，你会选什么？\",\n    \"你希望100年后，人们怎么记住你？\"\n  ],\n  en: [\n    \"What recent accomplishment makes you feel most proud?\",\n    \"If you could choose one moment in your life you're most proud of, what would it be?\",\n    \"Was there a period when you felt your life was especially amazing?\",\n    \"What's the biggest challenge you've ever faced? How did you get through it?\",\n    \"Has there been someone who has had a particularly big impact on you?\",\n    \"What's the craziest/boldest thing you've ever done?\",\n    \"If you could do things differently, what would you change?\",\n    \"What makes you lose track of time?\",\n    \"What skills or talents do you have that others don't know about?\",\n    \"If money weren't an issue, what would you do?\",\n    \"Who do you want to thank the most? Why?\",\n    \"What do you think you bring to the people around you?\",\n    \"If you could say something to yourself 10 years ago, what would it be?\",\n    \"If you had to describe your current life in three words, what would they be?\",\n    \"How do you want people to remember you 100 years from now?\"\n  ]\n};\n\nconst lang = session.language || 'zh';\nconst questionList = questions[lang] || questions.zh;\nconst currentQuestion = questionList[questionIndex] || '';\n\n// 构建消息\nconst messages = [\n  { role: \"system\", content: \"你是一位专业的人生故事倾听者和亮点挖掘师...\" },\n  { role: \"user\", content: `上一个问题：${currentQuestion}\\n\\n用户回答：${userAnswer}` }\n];\n\n// 检查是否完成\nconst isComplete = questionIndex >= questionList.length - 1;\n\nreturn {\n  json: {\n    sessionId: session.id,\n    questionIndex: questionIndex,\n    messages: JSON.stringify(messages),\n    currentQuestion: currentQuestion,\n    language: lang,\n    isComplete: isComplete,\n    nextQuestionIndex: questionIndex + 1\n  }\n};"
+      },
+      "id": "build-context",
+      "name": "构建对话上下文",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 600]
+    },
+    {
+      "parameters": {
+        "url": "https://api.minimax.chat/v1/text/chatcompletion_pro",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_MINIMAX_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "MiniMax-M2.5"
+            },
+            {
+              "name": "messages",
+              "value": "={{ $json.messages }}"
+            },
+            {
+              "name": "temperature",
+              "value": 0.7
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "minimax-chat",
+      "name": "MiniMax 对话",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1050, 600]
+    },
+    {
+      "parameters": {
+        "operation": "execute",
+        "language": "json",
+        "code": "// 解析MiniMax回复\nconst session = $('$').find('get-session').first().json;\nconst userAnswer = $('$').find('parse-response').first().json.userAnswer;\nconst currentQuestion = $('$').find('build-context').first().json.currentQuestion;\nconst mmReply = $input.first().json.choices?.[0]?.message?.content || '谢谢你的分享！';\nconst isComplete = $('$').find('build-context').first().json.isComplete;\n\n// 获取现有答案\nlet answers = [];\ntry {\n  answers = session.answers ? JSON.parse(session.answers) : [];\n} catch(e) {\n  answers = [];\n}\n\n// 添加新答案\nanswers.push({\n  question: currentQuestion,\n  answer: userAnswer,\n  timestamp: new Date().toISOString()\n});\n\nreturn {\n  json: {\n    sessionId: session.id,\n    currentQuestion: currentQuestion,\n    userAnswer: userAnswer,\n    aiReply: mmReply,\n    questionIndex: $('$').find('build-context').first().json.questionIndex,\n    answers: JSON.stringify(answers),\n    isComplete: isComplete\n  }\n};"
+      },
+      "id": "process-reply",
+      "name": "处理回复",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 600]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "screening_sessions",
+        "id": "={{ $json.sessionId }}",
+        "columns": "current_question, answers, status, updated_at",
+        "values": "={{ $json.questionIndex }}, '{{ $json.answers }}', '{{ $json.isComplete ? \"completed\" : \"in_progress\" }}', NOW()",
+        "options": {}
+      },
+      "id": "save-progress",
+      "name": "保存进度",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1450, 600],
+      "credentials": {
+        "supabase": "supabase-auth"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "execute",
+        "language": "json",
+        "code": "// 检查是否完成\nconst isComplete = $input.first().json.isComplete;\n\nif (isComplete) {\n  return {\n    json: {\n      action: 'complete',\n      reply: \"太棒了！感谢你分享了这么多精彩的故事～ 你的回答已经保存。\",\n      question: null,\n      questionIndex: 15\n    }\n  };\n} else {\n  // 返回下一题\n  const questionIndex = $input.first().json.questionIndex + 1;\n  const questionList = {\n    zh: [\n      \"如果让你选一个人生中最骄傲的时刻，会是什么？\",\n      \"有没有一段时间，你觉得自己的生活特别精彩？\",\n      \"你经历过最大的挑战是什么？你是怎么度过的？\",\n      \"有没有一个人对你的影响特别大？\",\n      \"你做过最疯狂/最大胆的事情是什么？\",\n      \"如果让你重新选择，你会做什么不同的决定？\",\n      \"什么事情让你做起来会忘记时间？\",\n      \"你有什么特长或技能是别人不知道的？\",\n      \"如果不用考虑钱，你会做什么？\",\n      \"你最想感谢的人是谁？为什么？\",\n      \"你觉得自己给身边的人带来了什么？\",\n      \"如果让你对10年前的自己说一句话，你会说什么？\",\n      \"用三个词形容你目前的人生，你会选什么？\",\n      \"你希望100年后，人们怎么记住你？\"\n    ],\n    en: [\n      \"If you could choose one moment in your life you're most proud of, what would it be?\",\n      \"Was there a period when you felt your life was especially amazing?\",\n      \"What's the biggest challenge you've ever faced? How did you get through it?\",\n      \"Has there been someone who has had a particularly big impact on you?\",\n      \"What's the craziest/boldest thing you've ever done?\",\n      \"If you could do things differently, what would you change?\",\n      \"What makes you lose track of time?\",\n      \"What skills or talents do you have that others don't know about?\",\n      \"If money weren't an issue, what would you do?\",\n      \"Who do you want to thank the most? Why?\",\n      \"What do you think you bring to the people around you?\",\n      \"If you could say something to yourself 10 years ago, what would it be?\",\n      \"If you had to describe your current life in three words, what would they be?\",\n      \"How do you want people to remember you 100 years from now?\"\n    ]\n  };\n  \n  const lang = 'zh'; // TODO: 从session获取\n  const nextQuestion = questionList[lang][questionIndex] || questionList.zh[questionIndex - 1] || '谢谢你的分享！';\n  \n  return {\n    json: {\n      action: 'continue',\n      reply: $input.first().json.aiReply,\n      question: nextQuestion,\n      questionIndex: questionIndex\n    }\n  };\n}"
+      },
+      "id": "check-complete",
+      "name": "检查完成状态",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 600]
+    }
+  ],
+  "connections": {
+    "用户入口 Webhook": {
+      "main": [[{"node": "验证支付", "type": "main", "index": 0}]]
+    },
+    "验证支付": {
+      "main": [[{"node": "创建筛选会话", "type": "main", "index": 0}]]
+    },
+    "创建筛选会话": {
+      "main": [[{"node": "生成开场白", "type": "main", "index": 0}]]
+    },
+    "生成开场白": {
+      "main": [[{"node": "MiniMax 首次对话", "type": "main", "index": 0}]]
+    },
+    "MiniMax 首次对话": {
+      "main": [[{"node": "解析首次回复", "type": "main", "index": 0}]]
+    },
+    "解析首次回复": {
+      "main": [[]]
+    },
+    "用户回复 Webhook": {
+      "main": [[{"node": "解析用户回复", "type": "main", "index": 0}]]
+    },
+    "解析用户回复": {
+      "main": [[{"node": "获取会话", "type": "main", "index": 0}]]
+    },
+    "获取会话": {
+      "main": [[{"node": "构建对话上下文", "type": "main", "index": 0}]]
+    },
+    "构建对话上下文": {
+      "main": [[{"node": "MiniMax 对话", "type": "main", "index": 0}]]
+    },
+    "MiniMax 对话": {
+      "main": [[{"node": "处理回复", "type": "main", "index": 0}]]
+    },
+    "处理回复": {
+      "main": [[{"node": "保存进度", "type": "main", "index": 0}]]
+    },
+    "保存进度": {
+      "main": [[{"node": "检查完成状态", "type": "main", "index": 0}]]
+    },
+    "检查完成状态": {
+      "main": [[]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["life-slices", "screening", "ai"],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

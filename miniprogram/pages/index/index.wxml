@@ -1,0 +1,40 @@
+<view class="container">
+  <view class="banner-swiper">
+    <swiper indicator-dots autoplay interval="4000" circular>
+      <swiper-item wx:for="{{banners}}" wx:key="id">
+        <image src="{{item.image}}" mode="aspectFill" class="banner-img" />
+        <view class="banner-title">{{item.title}}</view>
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <view class="features">
+    <view class="section-title">{{language === 'zh' ? '产品服务' : 'Services'}}</view>
+    <view class="feature-list">
+      <view class="feature-item" wx:for="{{features}}" wx:key="title" data-path="{{item.path}}" bindtap="goToScreening">
+        <image class="feature-icon" src="{{item.icon}}" mode="aspectFit" />
+        <view class="feature-content">
+          <text class="feature-title">{{item.title}}</text>
+          <text class="feature-desc">{{item.desc}}</text>
+          <text class="feature-price">{{item.price}}</text>
+        </view>
+        <text class="feature-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="recent-cases">
+    <view class="section-title">{{language === 'zh' ? '最近案例' : 'Recent Cases'}}</view>
+    <view class="case-list">
+      <view class="case-item" wx:for="{{recentCases}}" wx:key="name">
+        <view class="case-name">{{item.name}}</view>
+        <view class="case-highlight">{{item.highlight}}</view>
+        <view class="case-time">{{item.time}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="lang-switch" bindtap="switchLanguage">
+    {{language === 'zh' ? 'Switch to English' : '切换中文'}}
+  </view>
+</view>

@@ -1,0 +1,10 @@
+.container { padding: 32rpx; }
+.user-card { display: flex; flex-direction: column; align-items: center; padding: 48rpx 0; }
+.avatar { width: 160rpx; height: 160rpx; border-radius: 50%; margin-bottom: 24rpx; }
+.name { font-size: 36rpx; font-weight: bold; color: #333; }
+.login-area { padding: 48rpx 0; text-align: center; }
+.btn-login { width: 400rpx; height: 88rpx; line-height: 88rpx; background: #07C160; color: #fff; border-radius: 44rpx; font-size: 32rpx; }
+.menu-list { margin-top: 32rpx; background: #fff; border-radius: 16rpx; overflow: hidden; box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.06); }
+.menu-item { display: flex; justify-content: space-between; align-items: center; padding: 32rpx 24rpx; border-bottom: 1rpx solid #f0f0f0; }
+.menu-item:last-child { border-bottom: none; }
+.arrow { font-size: 36rpx; color: #ccc; }

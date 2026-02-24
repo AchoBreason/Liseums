@@ -1,0 +1,34 @@
+<view class="container">
+  <view class="status-area" wx:if="{{status === 'idle'}}">
+    <view class="intro-title">{{language === 'zh' ? 'AI人生亮点筛选' : 'AI Life Highlights Screening'}}</view>
+    <view class="intro-desc">{{language === 'zh' ? '通过15个问题，发现你的人生高光时刻' : 'Discover your life highlights through 15 questions'}}</view>
+    <view class="price-tag">{{language === 'zh' ? '¥59' : '$9.99'}}</view>
+    <button class="btn-primary" bindtap="startScreening">{{language === 'zh' ? '开始筛选' : 'Start Screening'}}</button>
+  </view>
+
+  <view class="status-area" wx:elif="{{status === 'paying'}}">
+    <view class="loading-text">{{language === 'zh' ? '正在处理支付...' : 'Processing payment...'}}</view>
+  </view>
+
+  <view class="chat-area" wx:elif="{{status === 'answering' || status === 'completed'}}">
+    <scroll-view scroll-y class="message-list" scroll-into-view="msg-{{messages.length - 1}}">
+      <view class="message-item" wx:for="{{messages}}" wx:key="index" id="msg-{{index}}">
+        <view class="msg-bubble {{item.role === 'user' ? 'user' : 'assistant'}}">{{item.content}}</view>
+      </view>
+      <view class="loading-msg" wx:if="{{loading}}">{{language === 'zh' ? 'AI正在思考...' : 'AI is thinking...'}}</view>
+    </scroll-view>
+
+    <view class="input-area" wx:if="{{status === 'answering' && !loading}}">
+      <view class="question-hint">{{currentQuestion.text}}</view>
+      <view class="input-row">
+        <input class="answer-input" placeholder="{{language === 'zh' ? '输入你的回答' : 'Type your answer'}}" value="{{userAnswer}}" bindinput="onInputChange" confirm-type="send" bindconfirm="sendAnswer" />
+        <button class="btn-send" bindtap="sendAnswer">{{language === 'zh' ? '发送' : 'Send'}}</button>
+      </view>
+    </view>
+
+    <view class="completed-area" wx:if="{{status === 'completed'}}">
+      <view class="done-title">{{language === 'zh' ? '筛选完成！' : 'Screening Complete!'}}</view>
+      <button class="btn-primary" bindtap="goToResult">{{language === 'zh' ? '查看报告' : 'View Report'}}</button>
+    </view>
+  </view>
+</view>

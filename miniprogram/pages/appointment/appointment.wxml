@@ -1,0 +1,19 @@
+<view class="container">
+  <view class="form-group">
+    <text class="label">{{language === 'zh' ? '预约日期' : 'Date'}}</text>
+    <picker mode="date" bindchange="onDateChange" value="{{date}}">
+      <view class="picker">{{date || (language === 'zh' ? '请选择' : 'Select')}}</view>
+    </picker>
+  </view>
+  <view class="form-group">
+    <text class="label">{{language === 'zh' ? '预约时间' : 'Time'}}</text>
+    <picker mode="time" bindchange="onTimeChange" value="{{time}}">
+      <view class="picker">{{time || (language === 'zh' ? '请选择' : 'Select')}}</view>
+    </picker>
+  </view>
+  <view class="form-group">
+    <text class="label">{{language === 'zh' ? '备注' : 'Notes'}}</text>
+    <textarea class="textarea" placeholder="{{language === 'zh' ? '可选' : 'Optional'}}" value="{{notes}}" bindinput="onNotesInput" />
+  </view>
+  <button class="btn-primary" bindtap="submitAppointment">{{language === 'zh' ? '提交预约' : 'Submit'}}</button>
+</view>
