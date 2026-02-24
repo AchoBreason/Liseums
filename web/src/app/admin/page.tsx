@@ -56,6 +56,7 @@ export default function AdminDashboard() {
   const [slices, setSlices] = useState<SliceRecord[]>([]);
   const [loadingSlices, setLoadingSlices] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [posterRemoved, setPosterRemoved] = useState(false);
 
   const loadSlices = useCallback(async () => {
     setLoadingSlices(true);
@@ -79,12 +80,26 @@ export default function AdminDashboard() {
     if (!file) return;
     setPosterFile(file);
     setPosterPreview(URL.createObjectURL(file));
+    setPosterRemoved(false);
   };
 
   const clearPoster = () => {
     setPosterFile(null);
     setPosterPreview(null);
+    setPosterRemoved(true);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const deletePosterFromStorage = async (url: string) => {
+    try {
+      // url roughly looks like: https://[project].supabase.co/storage/v1/object/public/slice-posters/[filename]
+      const parts = url.split("/");
+      const fileName = parts[parts.length - 1];
+      if (!fileName) return;
+      await supabase.storage.from("slice-posters").remove([fileName]);
+    } catch (err) {
+      console.error("Failed to delete old poster", err);
+    }
   };
 
   const uploadPoster = async (file: File): Promise<string> => {
@@ -117,12 +132,19 @@ export default function AdminDashboard() {
 
       let poster_url: string | null = null;
 
-      // Upload poster if a new file is selected
-      if (posterFile) {
-        poster_url = await uploadPoster(posterFile);
-      }
-
       if (editingId) {
+        // Find existing slice to check for old poster
+        const existingSlice = slices.find((s) => s.id === editingId);
+
+        // Upload poster if a new file is selected
+        if (posterFile) {
+          poster_url = await uploadPoster(posterFile);
+          // Delete old poster if exists
+          if (existingSlice?.poster_url) {
+            await deletePosterFromStorage(existingSlice.poster_url);
+          }
+        }
+
         // Update existing slice
         const updateData: Record<string, unknown> = {
           designation: form.designation,
@@ -134,7 +156,16 @@ export default function AdminDashboard() {
           ai_knowledge_base_id: form.ai_knowledge_base_id || null,
           updated_at: new Date().toISOString(),
         };
-        if (poster_url) updateData.poster_url = poster_url;
+
+        if (poster_url) {
+          updateData.poster_url = poster_url;
+        } else if (posterRemoved) {
+          updateData.poster_url = null;
+          // Delete old poster if user explicitly removed it without uploading a new one
+          if (existingSlice?.poster_url) {
+            await deletePosterFromStorage(existingSlice.poster_url);
+          }
+        }
 
         const { error } = await supabase
           .from("slices")
@@ -145,6 +176,11 @@ export default function AdminDashboard() {
         setMessage({ type: "success", text: "Slice updated successfully." });
       } else {
         // Create new slice
+        // Upload poster if a new file is selected
+        if (posterFile) {
+          poster_url = await uploadPoster(posterFile);
+        }
+
         const { error } = await supabase.from("slices").insert({
           designation: form.designation,
           title: form.title,
@@ -179,6 +215,7 @@ export default function AdminDashboard() {
   const resetForm = () => {
     setForm(emptyForm);
     clearPoster();
+    setPosterRemoved(false);
     setEditingId(null);
   };
 
@@ -195,12 +232,20 @@ export default function AdminDashboard() {
     });
     setPosterPreview(slice.poster_url);
     setPosterFile(null);
+    setPosterRemoved(false);
     setMessage(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const deleteSlice = async (id: string) => {
     if (!confirm("Delete this slice permanently?")) return;
+
+    // Find the slice to check for a poster
+    const sliceToDelete = slices.find((s) => s.id === id);
+    if (sliceToDelete?.poster_url) {
+      await deletePosterFromStorage(sliceToDelete.poster_url);
+    }
+
     const { error } = await supabase.from("slices").delete().eq("id", id);
     if (error) {
       setMessage({ type: "error", text: error.message });
@@ -243,11 +288,10 @@ export default function AdminDashboard() {
         {/* Message */}
         {message && (
           <div
-            className={`mb-12 flex items-start gap-3 p-4 border-[0.5px] ${
-              message.type === "success"
+            className={`mb-12 flex items-start gap-3 p-4 border-[0.5px] ${message.type === "success"
                 ? "border-green-500/30 text-green-700"
                 : "border-red-500/30 text-red-700"
-            }`}
+              }`}
           >
             {message.type === "success" ? (
               <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
