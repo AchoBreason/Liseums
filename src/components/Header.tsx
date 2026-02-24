@@ -33,12 +33,14 @@ export default function Header({ theme = 'light' }: HeaderProps) {
                 <Link href="/pricing" className="text-sm tracking-widest uppercase opacity-70 hover:opacity-100 transition-opacity duration-300">
                     Pricing
                 </Link>
-                <motion.button
-                    whileHover={{ backgroundColor: isDark ? "#fff" : "#111", color: isDark ? "#111" : "#fff" }}
-                    className={`px-6 py-2 border-[1px] ${borderColor} text-sm tracking-widest transition-all duration-300 uppercase`}
-                >
-                    Login
-                </motion.button>
+                <Link href="/login">
+                    <motion.button
+                        whileHover={{ backgroundColor: isDark ? "#fff" : "#111", color: isDark ? "#111" : "#fff" }}
+                        className={`px-6 py-2 border-[1px] ${borderColor} text-sm tracking-widest transition-all duration-300 uppercase`}
+                    >
+                        Login
+                    </motion.button>
+                </Link>
             </nav>
         </header>
     );
